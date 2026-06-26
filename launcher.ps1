@@ -26,6 +26,8 @@ $troubleshoot = 'https://massgrave.dev/troubleshoot'
 # --- Si no se paso -Action explicitamente, mostrar menu ----------
 $hasExplicitAction = $PSBoundParameters.ContainsKey('Action')
 
+
+
 # --- Logging ------------------------------------------------------
 try { Start-Transcript -Path $LogPath -Force | Out-Null } catch {}
 
@@ -224,7 +226,12 @@ function Show-Menu {
     Write-Host "  5. Dry run (simular, no ejecuta nada)" -ForegroundColor White
     Write-Host "  0. Salir" -ForegroundColor Gray
     Write-Host "  =======================================" -ForegroundColor Cyan
-    $choice = Read-Host "  Selecciona una opcion"
+    try {
+        $choice = Read-Host "  Selecciona una opcion"
+    } catch {
+        return 'exit'
+    }
+    if ([string]::IsNullOrEmpty($choice)) { return 'exit' }
     return $choice
 }
 
@@ -281,12 +288,16 @@ if (-not $hasExplicitAction) {
             '4' { $Action = 'status'; break }
             '5' { $Action = 'dryrun'; break }
             '0' { Write-Host "[OK] Saliendo." -ForegroundColor Green; Stop-Transcript -ErrorAction SilentlyContinue; return }
+            'exit' {
+                Write-Host "[!] Usando modo automatico. Ejecutando dryrun..." -ForegroundColor Yellow
+                $Action = 'dryrun'; break
+            }
             default {
                 Write-Host "[!] Opcion invalida." -ForegroundColor Yellow
                 Start-Sleep -Seconds 1; continue
             }
         }
-    } while ($choice -notin @('1','2','3','4','5','0'))
+    } while ($choice -notin @('1','2','3','4','5','0','exit'))
 
     if ($Action -ne 'dryrun') {
         $masContent = Download-MAS
