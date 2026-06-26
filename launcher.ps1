@@ -26,6 +26,9 @@ $troubleshoot = 'https://massgrave.dev/troubleshoot'
 # --- Si no se paso -Action explicitamente, mostrar menu ----------
 $hasExplicitAction = $PSBoundParameters.ContainsKey('Action')
 
+# Detectar si stdin es pipe (curl ... | powershell -c -)
+$isPiped = $Host.Name -ne 'ConsoleHost' -or (-not [Environment]::UserInteractive)
+
 
 
 # --- Logging ------------------------------------------------------
@@ -226,12 +229,7 @@ function Show-Menu {
     Write-Host "  5. Dry run (simular, no ejecuta nada)" -ForegroundColor White
     Write-Host "  0. Salir" -ForegroundColor Gray
     Write-Host "  =======================================" -ForegroundColor Cyan
-    try {
-        $choice = Read-Host "  Selecciona una opcion"
-    } catch {
-        return 'exit'
-    }
-    if ([string]::IsNullOrEmpty($choice)) { return 'exit' }
+    $choice = Read-Host "  Selecciona una opcion"
     return $choice
 }
 
@@ -275,34 +273,33 @@ if ($Action -eq 'help') {
     Stop-Transcript -ErrorAction SilentlyContinue; return
 }
 
-# Si no se paso -Action, mostrar menu interactivo
+# Si no se paso -Action, decidir entre menu o modo automatico
 if (-not $hasExplicitAction) {
-    $masContent = $null
-
-    do {
-        $choice = Show-Menu
-        switch ($choice) {
-            '1' { $Action = 'activate'; break }
-            '2' { $Action = 'kms38'; break }
-            '3' { $Action = 'online'; break }
-            '4' { $Action = 'status'; break }
-            '5' { $Action = 'dryrun'; break }
-            '0' { Write-Host "[OK] Saliendo." -ForegroundColor Green; Stop-Transcript -ErrorAction SilentlyContinue; return }
-            'exit' {
-                Write-Host "[!] Usando modo automatico. Ejecutando dryrun..." -ForegroundColor Yellow
-                $Action = 'dryrun'; break
-            }
-            default {
-                Write-Host "[!] Opcion invalida." -ForegroundColor Yellow
-                Start-Sleep -Seconds 1; continue
-            }
-        }
-    } while ($choice -notin @('1','2','3','4','5','0','exit'))
-
-    if ($Action -ne 'dryrun') {
+    if ($isPiped) {
+        Write-Host "[>] Modo automatico (pipe detectado). Ejecutando activate..." -ForegroundColor Cyan
+        $Action = 'activate'
         $masContent = Download-MAS
-        if (-not $masContent) {
-            Stop-Transcript -ErrorAction SilentlyContinue; return
+        if (-not $masContent) { Stop-Transcript -ErrorAction SilentlyContinue; return }
+    } else {
+        $masContent = $null
+        do {
+            $choice = Show-Menu
+            switch ($choice) {
+                '1' { $Action = 'activate'; break }
+                '2' { $Action = 'kms38'; break }
+                '3' { $Action = 'online'; break }
+                '4' { $Action = 'status'; break }
+                '5' { $Action = 'dryrun'; break }
+                '0' { Write-Host "[OK] Saliendo." -ForegroundColor Green; Stop-Transcript -ErrorAction SilentlyContinue; return }
+                default {
+                    Write-Host "[!] Opcion invalida." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 1; continue
+                }
+            }
+        } while ($choice -notin @('1','2','3','4','5','0'))
+        if ($Action -ne 'dryrun') {
+            $masContent = Download-MAS
+            if (-not $masContent) { Stop-Transcript -ErrorAction SilentlyContinue; return }
         }
     }
 } else {
