@@ -50,11 +50,8 @@ try {
 }
 
 try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    [Net.ServicePointManager]::ServerCertificateValidationCallback = {
-        param($sender, $cert, $chain, $errors)
-        $errors -eq [Net.Security.SslPolicyErrors]::None
-    }
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+    [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 } catch {}
 
 # --- Detectar antivirus de terceros -------------------------------
@@ -104,7 +101,20 @@ function Download-MAS {
     foreach ($URL in ($URLs | Sort-Object { Get-Random })) {
         try {
             Write-Progress -Activity "Descargando MAS..." -Status "Intentando: $URL"
-            $response = Invoke-RestMethod -Uri $URL -TimeoutSec 30 -ErrorAction Stop
+            # Metodo 1: Invoke-RestMethod
+            try {
+                $response = Invoke-RestMethod -Uri $URL -TimeoutSec 30 -ErrorAction Stop
+            } catch {
+                # Metodo 2: curl.exe (fallback)
+                $tmpFile = "$env:TEMP\MAS_$(Get-Random).cmd"
+                $proc = Start-Process -FilePath curl.exe -ArgumentList "-sL `"$URL`" -o `"$tmpFile`"" -Wait -PassThru -WindowStyle Hidden -ErrorAction SilentlyContinue
+                if ($proc.ExitCode -eq 0 -and (Test-Path $tmpFile)) {
+                    $response = Get-Content $tmpFile -Raw
+                    Remove-Item $tmpFile -Force -ErrorAction SilentlyContinue
+                } else {
+                    throw "curl.exe fallo con codigo $($proc.ExitCode)"
+                }
+            }
             Write-Progress -Activity "Descargando MAS..." -Completed
             break
         } catch {
