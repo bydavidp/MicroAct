@@ -27,7 +27,7 @@ $troubleshoot = 'https://massgrave.dev/troubleshoot'
 $hasExplicitAction = $PSBoundParameters.ContainsKey('Action')
 
 # Detectar si stdin es pipe (curl ... | powershell -c -)
-$isPiped = $Host.Name -ne 'ConsoleHost' -or (-not [Environment]::UserInteractive)
+$isPiped = try { [Console]::IsInputRedirected } catch { $false }
 
 
 
@@ -229,7 +229,8 @@ function Show-Menu {
     Write-Host "  5. Dry run (simular, no ejecuta nada)" -ForegroundColor White
     Write-Host "  0. Salir" -ForegroundColor Gray
     Write-Host "  =======================================" -ForegroundColor Cyan
-    $choice = Read-Host "  Selecciona una opcion"
+    try { $choice = Read-Host "  Selecciona una opcion" } catch { return '0' }
+    if ([string]::IsNullOrEmpty($choice)) { return '0' }
     return $choice
 }
 
