@@ -1,61 +1,57 @@
-# MAS Custom Launcher
+# MicroAct
 
-Launcher mejorado para Microsoft Activation Scripts.
+Launcher mejorado para Microsoft Activation Scripts (MAS).
 
-## Uso directo (irm | iex)
+## Uso
+
+### Desde internet (menú interactivo)
 
 ```powershell
-# Ayuda
-irm https://raw.githubusercontent.com/TU_USER/TU_REPO/main/launcher.ps1 | iex
-
-# Activar Windows
-irm https://raw.githubusercontent.com/TU_USER/TU_REPO/main/launcher.ps1 | iex -Action activate
-
-# Solo ver estado
-irm https://raw.githubusercontent.com/TU_USER/TU_REPO/main/launcher.ps1 | iex -Action status
-
-# Simulación sin ejecutar
-irm https://raw.githubusercontent.com/TU_USER/TU_REPO/main/launcher.ps1 | iex -Action dryrun
+irm https://raw.githubusercontent.com/bydavidp/MicroAct/master/launcher.ps1 | iex
 ```
 
-## Uso local
+Muestra un menú para elegir: HWID, KMS38, Online KMS, Status, Dry Run.
+
+### Local (con parámetros directos)
 
 ```powershell
-.\launcher.ps1
 .\launcher.ps1 -Action activate
+.\launcher.ps1 -Action kms38
+.\launcher.ps1 -Action online
+.\launcher.ps1 -Action status
 .\launcher.ps1 -Action dryrun
+.\launcher.ps1 -Action help
 ```
 
-## Publicar en GitHub
-
-1. Sube `launcher.ps1` a un repo público en GitHub
-2. Obtén la URL raw: `https://raw.githubusercontent.com/USER/REPO/main/launcher.ps1`
-3. Úsala con: `irm <URL> | iex`
-
-## Actualizar hash
-
-Si el script destino cambia:
+### Opciones adicionales
 
 ```powershell
-.\compute_hash.ps1 -Url https://raw.githubusercontent.com/massgravel/.../MAS_AIO.cmd
+.\launcher.ps1 -Action activate -SkipHashCheck
+.\launcher.ps1 -Action activate -LogPath C:\logs\microact.log
 ```
-
-Copia el hash resultante en `launcher.ps1`, línea `$expectedHash`.
 
 ## Mejoras incluidas
 
-- [x] Validación SSL de certificados
+- [x] Menú interactivo al usar `irm | iex`
+- [x] 3 mirrors de descarga con reintento aleatorio
 - [x] Verificación SHA256 post-descarga
+- [x] Validación SSL de certificados
 - [x] Auto-elevación (UAC) si no es admin
-- [x] Detección de PowerShell version + Language Mode
 - [x] Forzar encoding ASCII para cmd.exe
 - [x] Timeout de 30s por descarga
-- [x] 3 mirrors con reintento aleatorio
 - [x] Detección de antivirus de terceros
 - [x] Detección de AutoRun en CMD
-- [x] Confirmación previa a la ejecución
 - [x] Modo dry-run
 - [x] Logging con Start-Transcript
-- [x] Argumentos sanitizados
-- [x] Flags: -Action, -SkipHashCheck, -LogPath
 - [x] Limpieza de archivo temporal
+- [x] Flags: -Action, -SkipHashCheck, -LogPath
+
+## Actualizar hash
+
+Si el MAS original cambia:
+
+```powershell
+.\compute_hash.ps1 -Url https://raw.githubusercontent.com/massgravel/Microsoft-Activation-Scripts/refs/heads/master/MAS/All-In-One-Version-KL/MAS_AIO.cmd
+```
+
+Copia el hash en `launcher.ps1`, línea `$expectedHash`.
